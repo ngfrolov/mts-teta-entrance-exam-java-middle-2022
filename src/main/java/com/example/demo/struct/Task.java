@@ -2,12 +2,12 @@ package com.example.demo.struct;
 
 public class Task {
     String user;
-    String name;
+    String title;
     TaskStatus status;
     
-    public Task(String user, String name) {
+    public Task(String user, String title) {
         this.user = user;
-        this.name = name;
+        this.title = title;
         this.status = TaskStatus.CREATED;
     }    
 
@@ -15,8 +15,8 @@ public class Task {
         return this.user;
     }
 
-    public String getName() {
-        return this.name;
+    public String getTitle() {
+        return this.title;
     }
 
     public TaskStatus getStatus() {

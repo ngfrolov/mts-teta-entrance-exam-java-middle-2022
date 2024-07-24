@@ -239,6 +239,7 @@ class ServerTest extends AbstractServerTest {
 
   private void assertListTask(String user, List<String> expectedTasks) {
     String listTaskResponse = sendMessage(user + " LIST_TASK " + user);
+    System.out.println(user + " LIST_TASK " + user);
     assertEquals(format("TASKS %s", expectedTasks), listTaskResponse);
   }
 }

@@ -6,80 +6,94 @@ import com.example.demo.struct.*;
 
 
 public class TaskStorage {
-    Map<String, Task> tasks = new LinkedHashMap<String, Task>();   
+    Map<String, Task> tasks = new LinkedHashMap<String, Task>();
+    Map<String, Map<String, Task>> tasksCache = new LinkedHashMap<String, Map<String, Task>>();
 
     public Result processCommand(Command request) {
 
         if (request.getCommandType() == CommandType.__DELETE_ALL) {
-            tasks.clear();
-            return new Result(ResultType.__ALL_DELETED, null);
+            return this.deleteAll();
         } 
 
-        if (request.getCommandType() == CommandType.CREATE_TASK || 
-            request.getCommandType() == CommandType.CLOSE_TASK || 
-            request.getCommandType() == CommandType.REOPEN_TASK || 
-            request.getCommandType() == CommandType.DELETE_TASK) {
+        if (request.getCommandType() == CommandType.LIST_TASK) {
+            return this.listTask(request);
+        }
 
-            String name = request.getArgs()[0];      
-            Task storedTask = tasks.get(name); 
+        String title = request.getArgs()[0];      
+        Task storedTask = tasks.get(title); 
+        Map<String, Task> userTasks = tasksCache.get(request.getUser());
 
-            if (storedTask == null && !(request.getCommandType() == CommandType.CREATE_TASK)) {
+        if (request.getCommandType() == CommandType.CREATE_TASK) {
+            if (storedTask != null) {
                 return new Result(ResultType.ERROR, null);
             }
+            Task newTask = new Task(request.getUser(), title);
+            tasks.put(title, newTask);              
+            
+            if (userTasks == null) {
+                userTasks = new LinkedHashMap<String, Task>();                
+                tasksCache.put(request.getUser(), userTasks);
+            } 
+            userTasks.put(title, newTask);
 
-            if (request.getCommandType() == CommandType.CREATE_TASK) {
-                if (tasks.get(name) != null) {
-                    return new Result(ResultType.ERROR, null);
-                }
-                Task newTask = new Task(request.getUser(), name);
-                tasks.put(name, newTask);
-                return new Result(ResultType.CREATED, null);
-            }
+            return new Result(ResultType.CREATED, null);
+        } 
+          
+        if (storedTask == null) {
+            return new Result(ResultType.ERROR, null);
+        }
+        
+        if (!request.getUser().equals(storedTask.getUser())) {
+            return new Result(ResultType.ACCESS_DENIED, null);
+        }                      
+                                         
+        if (request.getCommandType() == CommandType.DELETE_TASK) {
+            if (storedTask.getStatus().equals(TaskStatus.CREATED) || storedTask.getStatus().equals(TaskStatus.DELETED)) {
+                return new Result(ResultType.ERROR, null);
+            } else {
+                storedTask.setStatus(TaskStatus.DELETED);
+                tasks.remove(title);                    
+                System.out.print("Before " + userTasks.size() + ", ");
+                userTasks.remove(title);
+                System.out.println("After " + userTasks.size());
 
-            if (!request.getUser().equals(storedTask.getUser())) {
-                return new Result(ResultType.ACCESS_DENIED, null);
+                return new Result(ResultType.DELETED, null);
             }      
-                    
-            if (request.getCommandType() == CommandType.CLOSE_TASK) {
-                if (storedTask.getStatus().equals(TaskStatus.CLOSED) || storedTask.getStatus().equals(TaskStatus.DELETED)) {
-                    return new Result(ResultType.ERROR, null);
-                } else {
-                    storedTask.setStatus(TaskStatus.CLOSED);
-                    return new Result(ResultType.CLOSED, null);
-                }
-            }
+        }
 
-            if (request.getCommandType() == CommandType.REOPEN_TASK) {
-                if (storedTask.getStatus().equals(TaskStatus.CREATED) || storedTask.getStatus().equals(TaskStatus.DELETED)) {
-                    return new Result(ResultType.ERROR, null);
-                } else {
-                    storedTask.setStatus(TaskStatus.CREATED);
-                    return new Result(ResultType.REOPENED, null);
-                }
-            }
-
-            if (request.getCommandType() == CommandType.DELETE_TASK) {
-                if (storedTask.getStatus().equals(TaskStatus.CREATED) || storedTask.getStatus().equals(TaskStatus.DELETED)) {
-                    return new Result(ResultType.ERROR, null);
-                } else {
-                    storedTask.setStatus(TaskStatus.DELETED);
-                    tasks.remove(name);
-                    return new Result(ResultType.DELETED, null);
-                }      
+        if (request.getCommandType() == CommandType.CLOSE_TASK) {
+            if (storedTask.getStatus().equals(TaskStatus.CLOSED) || storedTask.getStatus().equals(TaskStatus.DELETED)) {
+                return new Result(ResultType.ERROR, null);
+            } else {
+                storedTask.setStatus(TaskStatus.CLOSED);
+                return new Result(ResultType.CLOSED, null);
             }
         }
 
-        if (request.getCommandType() == CommandType.LIST_TASK) {
-            if (request.getUser() == null || request.getArgs() == null) {
-                return new Result(ResultType.WRONG_FORMAT, null);
+        if (request.getCommandType() == CommandType.REOPEN_TASK) {
+            if (storedTask.getStatus().equals(TaskStatus.CREATED) || storedTask.getStatus().equals(TaskStatus.DELETED)) {
+                return new Result(ResultType.ERROR, null);
+            } else {
+                storedTask.setStatus(TaskStatus.CREATED);
+                return new Result(ResultType.REOPENED, null);
             }
-            String targetUser = request.getArgs()[0];
-            String temp = tasks.values().stream().filter(x -> x.getUser().equals(targetUser)).map(x -> x.getName()).collect(Collectors.joining(", "));            
-            return new Result(ResultType.TASKS, temp);
         }
-
+        
         return null;
     }
 
-     
+    private Result deleteAll() {
+        tasks.clear();
+        return new Result(ResultType.__ALL_DELETED, null);
+    }
+
+    private Result listTask(Command request) {        
+        String targetUser = request.getArgs()[0];
+        //String temp = tasks.values().stream().filter(x -> x.getUser().equals(targetUser)).map(x -> x.getTitle()).collect(Collectors.joining(", "));            
+        //return new Result(ResultType.TASKS, temp);
+
+        String taskList = tasksCache.get(targetUser).values().stream().filter(x -> x.getStatus() != TaskStatus.DELETED).map(x -> x.getTitle()).collect(Collectors.joining(", "));
+        return new Result(ResultType.TASKS, taskList);
+
+    }     
 }

@@ -28,6 +28,7 @@ public class SWPConverter {
             if (commandType == null) {
                 return null;
             }
+            
             String[] args;
             if (textParts[2].startsWith("[") && textParts[2].endsWith("]")) {
                 args = textParts[2]
@@ -35,6 +36,10 @@ public class SWPConverter {
                                 .split(", "); 
             } else {
                 args = new String[] { textParts[2] };
+            }
+
+            if (commandType == CommandType.LIST_TASK && user == null && args == null) {
+                return null;
             }
 
             return new Command(user, commandType, args);
