@@ -6,23 +6,24 @@ import com.example.demo.struct.*;
 
 
 public class TaskStorage {
+
+    /* task title -> task object */
     Map<String, Task> tasks = new LinkedHashMap<String, Task>();
+
+    /* user name -> (task title -> task object) */
     Map<String, Map<String, Task>> tasksCache = new LinkedHashMap<String, Map<String, Task>>();
 
+    
     public Result processCommand(Command request) {
-
         if (request.getCommandType() == CommandType.__DELETE_ALL) {
             return this.deleteAll();
         } 
-
         if (request.getCommandType() == CommandType.LIST_TASK) {
             return this.listTask(request);
         }
-
         String title = request.getArgs()[0];      
         Task storedTask = tasks.get(title); 
         Map<String, Task> userTasks = tasksCache.get(request.getUser());
-
         if (request.getCommandType() == CommandType.CREATE_TASK) {
             if (storedTask != null) {
                 return new Result(ResultType.ERROR, null);
@@ -38,15 +39,12 @@ public class TaskStorage {
 
             return new Result(ResultType.CREATED, null);
         } 
-          
         if (storedTask == null) {
             return new Result(ResultType.ERROR, null);
         }
-        
         if (!request.getUser().equals(storedTask.getUser())) {
             return new Result(ResultType.ACCESS_DENIED, null);
-        }                      
-                                         
+        }                                                     
         if (request.getCommandType() == CommandType.DELETE_TASK) {
             if (storedTask.getStatus().equals(TaskStatus.CREATED) || storedTask.getStatus().equals(TaskStatus.DELETED)) {
                 return new Result(ResultType.ERROR, null);
@@ -60,7 +58,6 @@ public class TaskStorage {
                 return new Result(ResultType.DELETED, null);
             }      
         }
-
         if (request.getCommandType() == CommandType.CLOSE_TASK) {
             if (storedTask.getStatus().equals(TaskStatus.CLOSED) || storedTask.getStatus().equals(TaskStatus.DELETED)) {
                 return new Result(ResultType.ERROR, null);
@@ -69,7 +66,6 @@ public class TaskStorage {
                 return new Result(ResultType.CLOSED, null);
             }
         }
-
         if (request.getCommandType() == CommandType.REOPEN_TASK) {
             if (storedTask.getStatus().equals(TaskStatus.CREATED) || storedTask.getStatus().equals(TaskStatus.DELETED)) {
                 return new Result(ResultType.ERROR, null);
@@ -78,12 +74,12 @@ public class TaskStorage {
                 return new Result(ResultType.REOPENED, null);
             }
         }
-        
         return null;
     }
 
     private Result deleteAll() {
         tasks.clear();
+        tasksCache.clear();
         return new Result(ResultType.__ALL_DELETED, null);
     }
 
