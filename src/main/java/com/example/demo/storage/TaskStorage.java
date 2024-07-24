@@ -84,10 +84,7 @@ public class TaskStorage {
     }
 
     private Result listTask(Command request) {        
-        String targetUser = request.getArgs()[0];
-        //String temp = tasks.values().stream().filter(x -> x.getUser().equals(targetUser)).map(x -> x.getTitle()).collect(Collectors.joining(", "));            
-        //return new Result(ResultType.TASKS, temp);
-
+        String targetUser = request.getArgs()[0];        
         String taskList = tasksCache.get(targetUser).values().stream().map(x -> x.getTitle()).collect(Collectors.joining(", "));
         return new Result(ResultType.TASKS, taskList);
 
